@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ current_user.username }} - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div id="flash-container">
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+<script>
+      setTimeout(() => {
+
+    const flash = document.getElementById("flash-container");
+
+    if(flash){
+        flash.remove();
+    }
+
+}, 3000);
+
+</script>
+
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="navbar-brand">
+                <span>LocalCloud</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('views.dashboard') }}" class="active">Welcome back, {{ current_user.username }}!</a></li>
+                <li><a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+
+    <div class="dashboard-container">
+        <div class="container">
+            
+            <div class="card" style="background: linear-gradient(135deg, #0078d4, #00a4ef); color: white; padding: 32px; margin-bottom: 32px;">
+                <p style="opacity: 0.9;">
+                    You have <strong>{{ files|length }}</strong> files stored 
+                    {% if files %} 
+                    {% endif %}
+                </p>
+            </div>
+
+                       <!-- {% set total_size = files|sum(attribute='file_size')|default(0) %} -->
+            <div class="card" style="margin-bottom: 32px;">
+                <form action="{{ url_for('views.upload') }}" method="POST" enctype="multipart/form-data" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                    <input type="file" name="file" required style="flex: 1; padding: 10px; border: 2px dashed var(--border); border-radius: var(--radius); min-width: 200px;height: 100px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload
+                    </button>
+                </form>
+            </div>
+
+            <div style="background: white; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);">
+                <div class="files-header">
+                    <div class="file-controls">
+                        
+                        <form action="#" method="GET" style="display: flex; gap: 8px;">
+                            <input type="text" name="query" placeholder="🔍 Search files..." value="{{ request.args.get('query', '') }}" style="padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius); width: 200px;">
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </form>
+                        <button class="btn btn-secondary" onclick="toggleView()">
+                            <i class="fas fa-th"></i>
+                        </button>
+                    </div>
+                </div>
+
+                {% if files %}
+                <div class="files-grid" id="filesGrid">
+                    {% for file in files %}
+                    <div class="file-card" data-file-id="{{ file.id }}">
+                        <div class="file-icon">
+                            {% if file.filetype == 'Image' %}
+                                🖼️
+                            {% elif file.filetype == 'Video' %}
+                                🎬
+                            {% elif file.filetype == 'Audio' %}
+                                🎵
+                            {% elif file.filetype == 'Document' %}
+                                📄
+                            {% elif file.filetype == 'Archive' %}
+                                📦
+                            {% else %}
+                                📄
+                            {% endif %}
+                        </div>
+                        <h4>{{ file.filename }}</h4>
+                        <p>{{ file.filetype|capitalize }}</p>
+                        <div class="file-size">
+                            {% if file.file_size %}
+                                {% if file.file_size < 1024 %}
+                                    {{ file.file_size }} KB
+                                {% else %}
+                                    {{ (file.file_size / 1024)|round(1) }} MB
+                                {% endif %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 11px; color: var(--gray); margin-top: 4px;">
+                            Uploaded: {{ file.upload_date }}
+                        </div>
+                        
+                        
+                        <div style="margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+                            <form action="{{ url_for('views.download', file_id=file.id) }}" method="GET" style="display: inline;">
+                                <button type="submit" class="btn btn-secondary btn-sm" title="Download">
+                                    <i class="fas fa-download"></i> Download
+                                </button>
+                            </form>
+                            
+                            <button onclick="toggleEdit('{{ file.id }}')" class="btn btn-warning btn-sm" title="Edit">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            
+                            <form action="{{ url_for('views.delete', file_id=file.id) }}" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div id="edit-{{ file.id }}" class="ToHide" style="display: none; margin-top: 12px; padding: 12px; background: var(--light-gray); border-radius: var(--radius);">
+                            <form action="{{ url_for('views.rename', file_id=file.id) }}" method="POST" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <input type="text" name="filename" placeholder="New filename" value="{{ file.filename }}" required style="flex: 1; min-width: 120px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius);">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-save"></i> Rename
+                                </button>
+                                <button type="button" onclick="toggleEdit('{{ file.id }}')" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 60px 20px; color: var(--gray);">
+                    <i class="fas fa-folder-open" style="font-size: 64px; color: var(--border); margin-bottom: 16px;"></i>
+                    <h3>No files found</h3>
+                    <p>Upload your first file using the upload form above.</p>
+                </div>
+                {% endif %}
+            </div>
+
+           
+            <div class="stats-container">
+    <div>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label">📁 Total Files</div>
+                <div class="stat-value" id="totalFiles">{{filecount}}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">💾 Storage Used</div>
+                <div class="stat-value" id="storageUsed"> {{used_storage}} </div>
+                <div style="font-size: 12px; color: #6c757d;">of {{ total_storage }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">📊 Remaining</div>
+                <div class="stat-value success" id="storageRemaining"> {{ remaining_storage }} </div>
+            </div>
+        </div>
+        <div class="storage-bar-container">
+            <div class="storage-bar-header">
+                <span>Storage Used</span>
+                <span id="storagePercent">{{storage_percentage}}%</span>
+            </div>
+            <div class="storage-bar-track">
+                <div class="storage-bar-fill" id="storageFill" style="width: 100%;"></div>
+            </div>
+            <div class="storage-bar-labels">
+                <span>0%</span>
+                <span>100%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-card">
+        <div class="file-types-list">
+            <div class="file-type-item">
+                <span>🖼️ Images</span>
+                <span class="count" data-type="image">{{Images}}</span>
+            </div>
+            <div class="file-type-item">
+                <span>🎬 Videos</span>
+                <span class="count" data-type="video">{{Videos}}</span>
+            </div>
+            <div class="file-type-item">
+                <span>🎵 Audio</span>
+                <span class="count" data-type="audio">{{Audios}}</span>
+            </div>
+            <div class="file-type-item">
+                <span>📄 Documents</span>
+                <span class="count" data-type="document">{{Docs}}</span>
+            </div>
+            <div class="file-type-item">
+                <span>📦 Archives</span>
+                <span class="count" data-type="archive">{{Archives}}</span>
+            </div>
+             <div class="file-type-item">
+                <span>💽 Applications</span>
+                <span class="count" data-type="archive">{{Apps}}</span>
+            </div>
+             <div class="file-type-item">
+                <span>🈸 Fonts</span>
+                <span class="count" data-type="archive">{{Fonts}}</span>
+            </div>
+             <div class="file-type-item">
+                <span>🗃️ Database</span>
+                <span class="count" data-type="archive">{{dbs}}</span>
+            </div>
+            <div class="file-type-item">
+                <span>📎 Other</span>
+                <span class="count" data-type="other">2</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0;">
+    <div class="stats-card">
+        <div class="chart-container">
+            <canvas id="fileTypeChart"></canvas>
+        </div>
+    </div>
+
+    <div class="stats-card">
+        <div class="size-analysis-grid">
+            <div class="size-card">
+                <div class="icon">📏</div>
+                <div class="label">Largest File</div>
+                <div class="value" id="largestFile">{{maxfile }}</div>
+            </div>
+            <div class="size-card">
+                <div class="icon">📐</div>
+                <div class="label">Smallest File</div>
+                <div class="value" id="smallestFile">{{minfile }}</div>
+            </div>
+            <div class="size-card full-width">
+                <div class="icon">📊</div>
+                <div class="label">Average File Size</div>
+                <div class="value" id="avgFile"> {{avgfile }} </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+
+  
+    document.addEventListener('DOMContentLoaded', function() {
+        const fill = document.getElementById('storageFill');
+        const percentText = document.getElementById('storagePercent');
+        if (fill && percentText) {
+            const percentText = "{{storage_percentage}}%"
+            const percent = parseFloat('{{storage_percentage}}');
+            if (!isNaN(percent)) {
+                setTimeout(() => {
+                    fill.style.width = Math.min(100, Math.max(0, percent)) + '%';
+                }, 300);
+            }
+        }
+
+        const ctx = document.getElementById('fileTypeChart');
+        if (ctx) {
+            const counts = {
+                image: parseInt('{{ Images }}'),
+                video: parseInt('{{ Videos }}'),
+                audio: parseInt('{{ Audios }}'),
+                document: parseInt('{{ Docs }}'),
+                archive: parseInt('{{ Archives }}'),
+                application: parseInt(' {{Apps}} '),
+                font: parseInt(' {{Fots}} '),
+                database: parseInt(' {{dbs}} '),
+                other: parseInt('{{ Others }}')
+            };
+
+            const total = Object.values(counts).reduce((a, b) => a + b, 0);
+            
+            if (total === 0) {
+                ctx.parentElement.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No data to display</p>';
+                return;
+            }
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Images', 'Videos', 'Audio', 'Documents', 'Archives','Applications','Fonts','Databases', 'Other'],
+                    datasets: [{
+                        data: [
+                            counts.image,
+                            counts.video,
+                            counts.audio,
+                            counts.document,
+                            counts.archive,
+                            counts.application,
+                            counts.font,
+                            counts.database,
+                            counts.other
+                        ],
+                        backgroundColor: [
+                            '#4CAF50',
+                            '#2196F3',
+                            '#FF9800',
+                            '#9C27B0',
+                            '#F44336',
+                            '#607D8B'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 10 },
+                                padding: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+            <div style="margin-top: 32px;">
+                <h2 style="font-size: 24px; margin-bottom: 16px;">Recent Activity</h2>
+                <div class="card">
+                    <div class="activity-list">
+                        {% if files %}
+                            {% set sorted_files = files|sort(attribute='upload_date', reverse=True) %}
+                            {% for file in sorted_files[:5] %}
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <h4>Uploaded "{{ file.filename }}"</h4>
+                                    <p>{{ file.upload_date }}</p>
+                                </div>
+                                <span class="activity-time">
+                                    {% if file.filetype == 'folder' %}
+                                        📁 Folder
+                                    {% else %}
+                                        📄 File
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div style="text-align: center; padding: 20px; color: var(--gray);">
+                                <p>No recent activity</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fill = document.getElementById('storageFill');
+            if (fill) {
+                const width = fill.getAttribute('data-width');
+                if (width !== null && width !== '') {
+                    fill.style.width = width + '%';
+                }
+            }
+        });
+
+        function toggleEdit(fileId) {
+            const editDiv = document.getElementById('edit-' + fileId);
+            if (editDiv) {
+                if (editDiv.style.display === 'none' || editDiv.style.display === '') {
+                    editDiv.style.display = 'block';
+                } else {
+                    editDiv.style.display = 'none';
+                }
+            }
+        }
+
+        function toggleView() {
+            const grid = document.getElementById('filesGrid');
+            if (grid) {
+                if (grid.classList.contains('files-grid')) {
+                    grid.classList.remove('files-grid');
+                    grid.classList.add('files-list');
+                    grid.style.display = 'block';
+                    const cards = grid.querySelectorAll('.file-card');
+                    cards.forEach(card => {
+                        card.style.display = 'flex';
+                        card.style.alignItems = 'center';
+                        card.style.gap = '20px';
+                        card.style.padding = '12px 16px';
+                        card.style.marginBottom = '8px';
+                    });
+                } else {
+                    grid.classList.remove('files-list');
+                    grid.classList.add('files-grid');
+                    grid.style.display = 'grid';
+                    const cards = grid.querySelectorAll('.file-card');
+                    cards.forEach(card => {
+                        card.style.display = 'block';
+                        card.style.padding = '16px';
+                    });
+                }
+            }
+        }
+
+        document.addEventListener('click', function(event) {
+            const editForms = document.querySelectorAll('.ToHide');
+            editForms.forEach(form => {
+                if (form.style.display === 'block') {
+                    const card = form.closest('.file-card');
+                    if (card && !card.contains(event.target)) {
+                        form.style.display = 'none';
+                    }
+                }
+            });
+        });
+
+        const style = document.createElement('style');
+        style.textContent = `
+            .files-list .file-card {
+                display: flex !important;
+                align-items: center !important;
+                gap: 20px !important;
+                padding: 12px 16px !important;
+                margin-bottom: 8px !important;
+                border-bottom: 1px solid var(--border);
+            }
+            .files-list .file-icon {
+                font-size: 24px !important;
+                margin-bottom: 0 !important;
+            }
+            .files-list .file-card h4 {
+                margin-bottom: 0 !important;
+                flex: 1;
+            }
+            .files-list .file-card p {
+                margin-bottom: 0 !important;
+                min-width: 80px;
+            }
+            .files-list .file-size {
+                min-width: 80px;
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('Dashboard loaded successfully!');
+        console.log('Total files:', '{{ files|length }}');
+        console.log('User:', '{{ current_user.username }}');
+    </script>
+</body>
+</html>
