@@ -34,8 +34,7 @@ making it an excellent learning project for Flask and full-stack web development
 > Login Page
 Simple modern authentication interface.
 ```
-
-![Login](docs/Screenshot%202026-06-30%20172149.png)
+<img src = "ScreenShots - Of No Use/Login.png">
 
 ---
  
@@ -44,16 +43,7 @@ Simple modern authentication interface.
 Upload files, search and manage them.
 ```
 
-![Dashboard](docs/Screenshot%202026-06-30%20172227.png)
-
----
-
-```
-> Analytics Dashboard
-Storage statistics and visual analytics.
-```
-
-![Analytics](docs/Screenshot%202026-06-30%20172241.png)
+<img src = "ScreenShots - Of No Use/dashboard.png">
 
 ---
 
@@ -62,7 +52,7 @@ Storage statistics and visual analytics.
 Largest, smallest and average file size.
 ```
 
-![Insights](docs/Screenshot%202026-06-30%20172405.png)
+<img src = "ScreenShots - Of No Use/StorageInsight.png">
 
 ---
 
@@ -71,10 +61,7 @@ Largest, smallest and average file size.
 Displays latest uploaded files.
 ```
 
-![Activity](docs/Screenshot%202026-06-30%20172416.png)
-
----
-
+<img src = "ScreenShots - Of No Use/RecentActivities.png">
 
 
 ---
@@ -85,9 +72,7 @@ Displays latest uploaded files.
 LocalCloud/
 
 │
-├── app.py
 ├── main.py
-├── requirements.txt
 │
 ├── instance/
 │      database.db
@@ -115,7 +100,7 @@ python main.py
 
 ### `> Database Models`
 
-> User
+<b>  User  </b>
 
 ```
 id
@@ -127,7 +112,7 @@ storage_used
 
 ---
 
-> File
+<b>  File  </b>
 
 ```
 id
@@ -138,6 +123,3 @@ filetype
 upload_date
 user_id
 ```
-
-
-Built with ❤️ By Akshay !
